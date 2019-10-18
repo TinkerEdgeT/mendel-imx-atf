@@ -27,7 +27,7 @@
 #define GPC_IMR2_CORE1_A53	0x44
 #define GPC_IMR3_CORE1_A53	0x48
 #define GPC_IMR4_CORE1_A53	0x4c
-#define GPC_IMR1_CORE0_M4		0x50
+#define GPC_IMR1_CORE0_M4	0x50
 #define GPC_IMR1_CORE2_A53	0x1c0
 #define GPC_IMR2_CORE2_A53	0x1c4
 #define GPC_IMR3_CORE2_A53	0x1c8
@@ -318,13 +318,13 @@ void imx_set_cluster_powerdown(int last_core, bool pdn)
 		 * disable in LPM mode.
 		 */
 		val = mmio_read_32(IMX_GPC_BASE + LPCR_A53_BSC);
-		val |= 0xa; /* enable the C0~1 LPM */
+		val |= 0x5; /* enable the C0~1 LPM */
 		val &= ~(1 << 14); /* disable cpu clock in LPM */
 		mmio_write_32(IMX_GPC_BASE + LPCR_A53_BSC, val);
 
 		/* enable C2-3's LPM */
 		val = mmio_read_32(IMX_GPC_BASE + LPCR_A53_BSC2);
-		val |= 0xa;
+		val |= 0x5;
 		mmio_write_32(IMX_GPC_BASE + LPCR_A53_BSC2, val);
 
 		/* enable PLAT/SCU power down */
@@ -357,12 +357,12 @@ void imx_set_cluster_powerdown(int last_core, bool pdn)
 
 		/* reverse the cluster level setting */
 		val = mmio_read_32(IMX_GPC_BASE + LPCR_A53_BSC);
-		val &= ~0xa; /* clear the C0~1 LPM */
+		val &= ~0x5; /* clear the C0~1 LPM */
 		val |= (1 << 14); /* disable cpu clock in LPM */
 		mmio_write_32(IMX_GPC_BASE + LPCR_A53_BSC, val);
 
 		val = mmio_read_32(IMX_GPC_BASE + LPCR_A53_BSC2);
-		val &= ~0xa;
+		val &= ~0x5;
 		mmio_write_32(IMX_GPC_BASE + LPCR_A53_BSC2, val);
 
 		/* clear PLAT/SCU power down */
@@ -388,13 +388,7 @@ void imx_set_sys_lpm(bool retention)
 
 	if (retention) {
 		val |= (SLPCR_EN_DSM | SLPCR_VSTBY | SLPCR_SBYOS |
-			 SLPCR_BYPASS_PMIC_READY | SLPCR_RBC_EN);
-
-		/* DDR enter retention */
-		dram_enter_retention();
-	} else {
-		/* DDR exit retention */
-		dram_exit_retention();
+			 SLPCR_BYPASS_PMIC_READY | SLPCR_RBC_EN | SLPCR_A53_FASTWUP_WAIT);
 	}
 
 	mmio_write_32(IMX_GPC_BASE + 0x14, val);
@@ -420,6 +414,7 @@ void imx_clear_rbc_count(void)
 }
 void imx_anamix_pre_suspend()
 {
+#if 0
 	/* override PLL/OSC to let ccm control them */
 	mmio_write_32(IMX_ANAMIX_BASE + ANAMIX_HW_AUDIO_PLL1_CFG0,
 		mmio_read_32(IMX_ANAMIX_BASE + ANAMIX_HW_AUDIO_PLL1_CFG0) | 0x140000);
@@ -445,10 +440,12 @@ void imx_anamix_pre_suspend()
 		mmio_read_32(IMX_ANAMIX_BASE + ANAMIX_HW_DRAM_PLL_CFG0) | 0x140);
 	mmio_write_32(IMX_ANAMIX_BASE + ANAMIX_HW_ANAMIX_MISC_CFG,
 		mmio_read_32(IMX_ANAMIX_BASE + ANAMIX_HW_ANAMIX_MISC_CFG) | 0xa);
+#endif
 }
 
 void imx_anamix_post_resume(void)
 {
+#if 0
 	/* clear override of PLL/OSC */
 	mmio_write_32(IMX_ANAMIX_BASE + ANAMIX_HW_AUDIO_PLL1_CFG0,
 		mmio_read_32(IMX_ANAMIX_BASE + ANAMIX_HW_AUDIO_PLL1_CFG0) & ~0x140000);
@@ -474,6 +471,7 @@ void imx_anamix_post_resume(void)
 		mmio_read_32(IMX_ANAMIX_BASE + ANAMIX_HW_DRAM_PLL_CFG0) & ~0x140);
 	mmio_write_32(IMX_ANAMIX_BASE + ANAMIX_HW_ANAMIX_MISC_CFG,
 		mmio_read_32(IMX_ANAMIX_BASE + ANAMIX_HW_ANAMIX_MISC_CFG) & ~0xa);
+#endif
 }
 
 static void imx_gpc_hwirq_mask(unsigned int hwirq)
