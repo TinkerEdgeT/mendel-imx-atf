@@ -16,6 +16,7 @@
 #include <platform_def.h>
 #include <imx_sip.h>
 #include <soc.h>
+#include <bakery_lock.h>
 
 #define GPC_MST_CPU_MAPPING	0x18
 #define GPC_PGC_ACK_SEL_A53	0x24
@@ -92,6 +93,10 @@ static uint32_t gpc_pu_m_core_offset[11] = {
 	0xec0, 0xf00, 0xf40,
 };
 
+spinlock_t gpc_imr_lock[4];
+
+DEFINE_BAKERY_LOCK(gpc_lock);
+
 void imx_gpc_set_m_core_pgc(unsigned int offset, bool pdn)
 {
 	uintptr_t val;
@@ -122,11 +127,15 @@ void imx_set_cpu_pwr_off(int core_id)
 {
 	uint32_t val;
 
+	bakery_lock_get(&gpc_lock);
+
 	/* enable the wfi power down of the core */
 	val = mmio_read_32(IMX_GPC_BASE + 0x4);
 	val |= (1 << (core_id < 2 ? core_id * 2 : (core_id - 2) * 2 + 16));
 	val |= 1 << (core_id + 20);
 	mmio_write_32(IMX_GPC_BASE + 0x4, val);
+
+	bakery_lock_release(&gpc_lock);
 
 	/* assert the pcg pcr bit of the core */
 	val = mmio_read_32(IMX_GPC_BASE + 0x800 + 0x40 * core_id);
@@ -139,10 +148,14 @@ void imx_set_cpu_pwr_on(int core_id)
 {
 	uint32_t val;
 
+	bakery_lock_get(&gpc_lock);
+
 	/* clear the wfi power down bit of the core */
 	val = mmio_read_32(IMX_GPC_BASE + 0x4);
 	val &= ~(1 << (core_id < 2 ? core_id * 2 : (core_id - 2) * 2 + 16));
 	mmio_write_32(IMX_GPC_BASE + 0x4, val);
+
+	bakery_lock_release(&gpc_lock);
 
 	/* assert the ncpuporeset */
 	val = mmio_read_32(IMX_SRC_BASE + 0x8);
@@ -179,6 +192,8 @@ void imx_set_cpu_lpm(int core_id, bool pdn)
 {
 	uint32_t val;
 
+	bakery_lock_get(&gpc_lock);
+
 	if (pdn) {
 		val = mmio_read_32(IMX_GPC_BASE + 0x4);
 		/* enable the core WFI power down */
@@ -204,6 +219,8 @@ void imx_set_cpu_lpm(int core_id, bool pdn)
 		val &= ~(1 << 0);
 		mmio_write_32(IMX_GPC_BASE + 0x800 + 0x40 * core_id, val);
 	}
+
+	bakery_lock_release(&gpc_lock);
 }
 
 /*
