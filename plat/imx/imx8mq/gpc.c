@@ -93,8 +93,6 @@ static uint32_t gpc_pu_m_core_offset[11] = {
 	0xec0, 0xf00, 0xf40,
 };
 
-spinlock_t gpc_imr_lock[4];
-
 DEFINE_BAKERY_LOCK(gpc_lock);
 
 void imx_gpc_set_m_core_pgc(unsigned int offset, bool pdn)
