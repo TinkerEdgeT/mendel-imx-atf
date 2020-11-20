@@ -250,7 +250,7 @@ void lpddr4_exit_retention(void)
 		INFO("wait STAT to normal state\n");
 	}
  
-	mmio_write_32(DDRC_DERATEEN(0), 0x00000302);
+	//mmio_write_32(DDRC_DERATEEN(0), 0x00000302);
 
 	mmio_write_32(DDRC_PCTRL_0(0), 0x00000001); 
 	 /* dis_auto-refresh is set to 0 */
